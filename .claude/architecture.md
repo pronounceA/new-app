@@ -58,9 +58,11 @@ ws://localhost:8000/ws/{player_id}
 
 | イベント | ペイロード | 説明 |
 |---------|-----------|------|
-| `create_room` | `{nickname, max_players}` | ルームを作成する |
+| `create_room` | `{nickname, max_players}` | ルームを作成する（max_players: 2〜6） |
 | `join_room` | `{room_id, nickname}` | 既存ルームに参加する |
-| `play_card` | `{card_id}` | カードをプレイする |
+| `score_cards` | `{}` | 場のカードを得点化する（ターン開始時・必須） |
+| `draw_card` | `{}` | 山札からカードを1枚引く |
+| `steal_card` | `{target_player_id, card_number}` | 他プレイヤーの場のカードを横取りする |
 | `leave_room` | `{}` | ルームから退出する |
 
 #### サーバー → クライアント
@@ -68,12 +70,37 @@ ws://localhost:8000/ws/{player_id}
 | イベント | ペイロード | 説明 |
 |---------|-----------|------|
 | `room_created` | `{room_id}` | ルーム作成完了通知 |
-| `player_joined` | `{nickname, player_count}` | プレイヤー参加通知 |
-| `game_started` | `{players, cards}` | ゲーム開始・手札配布 |
-| `card_played` | `{player, card}` | カードプレイ通知 |
-| `turn_changed` | `{current_player}` | ターン変更通知 |
-| `game_ended` | `{winner}` | ゲーム終了・勝者通知 |
-| `error` | `{message}` | エラー通知 |
+| `player_joined` | `{nickname, player_count, players}` | プレイヤー参加通知（全員へブロードキャスト） |
+| `game_started` | `{players, deck_count, first_player}` | ゲーム開始通知 |
+| `card_drawn` | `{player, card, field}` | カードが引かれた通知（全員へブロードキャスト） |
+| `cards_scored` | `{player, cards, score}` | 得点化発生通知（全員へブロードキャスト） |
+| `burst` | `{player, lost_cards}` | バースト発生通知（全員へブロードキャスト） |
+| `card_stolen` | `{from_player, to_player, card}` | 横取り発生通知（全員へブロードキャスト） |
+| `turn_changed` | `{current_player}` | ターン変更通知（全員へブロードキャスト） |
+| `game_state` | `{fields, deck_count, scores, current_player}` | ゲーム状態全体更新 |
+| `game_ended` | `{winner, rankings}` | ゲーム終了・勝者通知（全員へブロードキャスト） |
+| `error` | `{message, code}` | エラー通知（送信元のみ） |
+
+---
+
+## Redisキー設計
+
+| キー | 型 | 内容 | TTL |
+|------|----|------|-----|
+| `room:{room_id}` | Hash | ルーム情報（状態・最大人数・ホスト等） | 3時間 |
+| `room:{room_id}:players` | List | 参加プレイヤー一覧（順番 = ターン順） | 3時間 |
+| `game:{room_id}:deck` | List | 山札（シャッフル済み、右端が山札の上） | ゲーム終了まで |
+| `game:{room_id}:field:{player_id}` | List | 各プレイヤーの場のカード（数字のみ） | ゲーム終了まで |
+| `game:{room_id}:scores` | Hash | 各プレイヤーの得点（`player_id` → `score`） | ゲーム終了まで |
+| `game:{room_id}:turn` | Hash | 現在のターン情報（`current_player_id`, `phase`） | ゲーム終了まで |
+
+### フェーズ定義（`game:{room_id}:turn.phase`）
+
+| フェーズ | 説明 |
+|---------|------|
+| `score` | 得点化待ち（場が空でない場合に開始） |
+| `draw` | カードを引く待ち |
+| `steal` | 横取り選択待ち（横取り可能な場合のみ） |
 
 ---
 

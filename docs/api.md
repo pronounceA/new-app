@@ -72,7 +72,7 @@ ws://localhost:8000/ws/{player_id}
   "type": "create_room",
   "payload": {
     "nickname": "たろう",
-    "max_players": 4      // 2〜10
+    "max_players": 4      // 2〜6
   }
 }
 ```
@@ -97,18 +97,53 @@ ws://localhost:8000/ws/{player_id}
 
 ---
 
-### `play_card` - カードをプレイ
+### `score_cards` - 得点化
+
+ターン開始時に場のカードを得点化する。場にカードがある場合は必須。
 
 ```json
 {
-  "type": "play_card",
+  "type": "score_cards",
+  "payload": {}
+}
+```
+
+**成功時レスポンス**: [`cards_scored`](#cards_scored---得点化通知)（全参加者へブロードキャスト）
+
+---
+
+### `draw_card` - カードを引く
+
+得点化の後に山札からカードを1枚引く。
+
+```json
+{
+  "type": "draw_card",
+  "payload": {}
+}
+```
+
+**成功時レスポンス**: [`card_drawn`](#card_drawn---カードを引いた通知)（全参加者へブロードキャスト）
+
+バースト発生時は追加で [`burst`](#burst---バースト通知) が全参加者へ送信される。
+
+---
+
+### `steal_card` - 横取り
+
+引いたカードの数字が他プレイヤーの場のカードと一致する場合に任意で実行できる。
+
+```json
+{
+  "type": "steal_card",
   "payload": {
-    "card_id": "heart_7"  // カードID（例: "spade_A", "diamond_3"）
+    "target_player_id": "player_uuid",
+    "card_number": 7
   }
 }
 ```
 
-**成功時レスポンス**: [`card_played`](#card_played---カードプレイ通知)（全参加者へブロードキャスト）
+**成功時レスポンス**: [`card_stolen`](#card_stolen---横取り通知)（全参加者へブロードキャスト）
 
 ---
 
@@ -157,14 +192,14 @@ ws://localhost:8000/ws/{player_id}
 
 ### `game_started` - ゲーム開始
 
-全参加者にブロードキャスト。各プレイヤーには自分の手札のみ送信。
+全参加者にブロードキャスト。手札はなし。
 
 ```json
 {
   "type": "game_started",
   "payload": {
     "players": ["たろう", "はなこ", "じろう"],
-    "your_cards": ["heart_7", "spade_A", "diamond_3"],
+    "deck_count": 110,
     "first_player": "たろう"
   }
 }
@@ -172,16 +207,75 @@ ws://localhost:8000/ws/{player_id}
 
 ---
 
-### `card_played` - カードプレイ通知
+### `card_drawn` - カードを引いた通知
 
 全参加者にブロードキャスト。
 
 ```json
 {
-  "type": "card_played",
+  "type": "card_drawn",
   "payload": {
     "player": "たろう",
-    "card": "heart_7"
+    "card": 7,
+    "field": [3, 7]
+  }
+}
+```
+
+- `card`: 引いたカードの数字
+- `field`: 引いた後のそのプレイヤーの場のカード一覧
+
+---
+
+### `cards_scored` - 得点化通知
+
+全参加者にブロードキャスト。
+
+```json
+{
+  "type": "cards_scored",
+  "payload": {
+    "player": "たろう",
+    "cards": [3, 7, 5],
+    "score": 15
+  }
+}
+```
+
+- `cards`: 得点化されたカードの数字一覧
+- `score`: 今回の得点化で加算された得点
+
+---
+
+### `burst` - バースト通知
+
+バースト発生時に全参加者にブロードキャスト。
+
+```json
+{
+  "type": "burst",
+  "payload": {
+    "player": "たろう",
+    "lost_cards": [3, 7, 7]
+  }
+}
+```
+
+- `lost_cards`: バーストにより失われた場のカード一覧（得点化不可）
+
+---
+
+### `card_stolen` - 横取り通知
+
+全参加者にブロードキャスト。
+
+```json
+{
+  "type": "card_stolen",
+  "payload": {
+    "from_player": "はなこ",
+    "to_player": "たろう",
+    "card": 7
   }
 }
 ```
@@ -203,16 +297,46 @@ ws://localhost:8000/ws/{player_id}
 
 ---
 
+### `game_state` - ゲーム状態更新
+
+全参加者にブロードキャスト。接続再確立時や整合性確認時に送信。
+
+```json
+{
+  "type": "game_state",
+  "payload": {
+    "fields": {
+      "たろう": [3, 5],
+      "はなこ": [],
+      "じろう": [8]
+    },
+    "deck_count": 87,
+    "scores": {
+      "たろう": 20,
+      "はなこ": 15,
+      "じろう": 8
+    },
+    "current_player": "はなこ"
+  }
+}
+```
+
+---
+
 ### `game_ended` - ゲーム終了
 
-全参加者にブロードキャスト。
+全参加者にブロードキャスト。山札がなくなった時点で送信。
 
 ```json
 {
   "type": "game_ended",
   "payload": {
     "winner": "たろう",
-    "rankings": ["たろう", "じろう", "はなこ"]
+    "rankings": [
+      {"player": "たろう", "score": 45},
+      {"player": "じろう", "score": 38},
+      {"player": "はなこ", "score": 27}
+    ]
   }
 }
 ```
@@ -238,10 +362,11 @@ ws://localhost:8000/ws/{player_id}
 | コード | 説明 |
 |--------|------|
 | `ROOM_NOT_FOUND` | 指定したルームが存在しない |
-| `ROOM_FULL` | ルームが満員 |
+| `ROOM_FULL` | ルームが満員（最大6人） |
 | `GAME_NOT_STARTED` | ゲームがまだ開始していない |
 | `NOT_YOUR_TURN` | 自分のターンではない |
-| `INVALID_CARD` | 無効なカードID |
+| `INVALID_PHASE` | 現在のフェーズで許可されていない操作 |
+| `CANNOT_STEAL` | 横取り条件を満たしていない |
 | `ALREADY_IN_ROOM` | すでにルームに参加している |
 
 ---
@@ -252,8 +377,18 @@ ws://localhost:8000/ws/{player_id}
 waiting（参加待ち）
     ↓ 全員揃ってホストが開始
 playing（ゲーム中）
-    ↓ 勝敗決定
+  ↓ ターンフロー
+  [score_cards] → [draw_card] → バースト or [steal_card（任意）] → turn_changed
+    ↓ 山札がなくなった時点
 finished（終了）
     ↓ 再戦 or 解散
 waiting or 解散
 ```
+
+### ターンフェーズ
+
+| フェーズ | 有効なイベント |
+|---------|--------------|
+| `score` | `score_cards`（場が空の場合はスキップして `draw` へ） |
+| `draw` | `draw_card` |
+| `steal` | `steal_card`、または何もしないでターン終了 |

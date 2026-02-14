@@ -1,11 +1,11 @@
 # リアルタイムカードゲームアプリ
 
-WebSocketを使用したリアルタイム通信により、2～10人が同時にカードゲームをプレイできるWebアプリケーションです。
+WebSocketを使用したリアルタイム通信により、2～6人が同時にカードゲームをプレイできるWebアプリケーションです。
 
 ## 主な機能
 
 - **リアルタイム通信**: WebSocketによる双方向通信で、遅延なくゲームをプレイ
-- **マルチプレイヤー**: 2～10人が同時に参加可能
+- **マルチプレイヤー**: 2～6人が同時に参加可能
 - **ゲームルーム管理**: ルームの作成・参加・退出
 - **カードゲームロジック**: カード配布、プレイ、ターン制御、勝敗判定
 - **簡易認証**: ニックネーム入力でゲームに参加
@@ -179,7 +179,9 @@ docker-compose up -d --build
 |---------|--------|------|
 | `join_room` | `{room_id, nickname}` | ルームに参加 |
 | `create_room` | `{nickname, max_players}` | ルームを作成 |
-| `play_card` | `{card_id}` | カードをプレイ |
+| `score_cards` | `{}` | 場のカードを得点化 |
+| `draw_card` | `{}` | カードを引く |
+| `steal_card` | `{target_player_id, card_number}` | 他プレイヤーのカードを横取り |
 | `leave_room` | `{}` | ルームから退出 |
 
 #### サーバー → クライアント
@@ -188,11 +190,15 @@ docker-compose up -d --build
 |---------|--------|------|
 | `room_created` | `{room_id}` | ルーム作成完了 |
 | `player_joined` | `{nickname, player_count}` | プレイヤー参加 |
-| `game_started` | `{players, cards}` | ゲーム開始 |
-| `card_played` | `{player, card}` | カードがプレイされた |
+| `game_started` | `{players, deck_count, first_player}` | ゲーム開始 |
+| `card_drawn` | `{player, card, field}` | カードが引かれた |
+| `cards_scored` | `{player, cards, score}` | 得点化が発生 |
+| `burst` | `{player, lost_cards}` | バーストが発生 |
+| `card_stolen` | `{from_player, to_player, card}` | 横取りが発生 |
 | `turn_changed` | `{current_player}` | ターン変更 |
-| `game_ended` | `{winner}` | ゲーム終了 |
-| `error` | `{message}` | エラー通知 |
+| `game_state` | `{fields, deck_count, scores, current_player}` | ゲーム状態更新 |
+| `game_ended` | `{winner, rankings}` | ゲーム終了 |
+| `error` | `{message, code}` | エラー通知 |
 
 ## デプロイ
 
