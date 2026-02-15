@@ -36,9 +36,8 @@ const GamePage: React.FC = () => {
   }, [isConnected, roomId, nickname, sendEvent]);
 
   const handleSkipSteal = useCallback(() => {
-    // steal フェーズをスキップ（turn_changed を待つ）
-    // サーバー実装によってはタイムアウトで自動スキップされる場合もある
-  }, []);
+    sendEvent({ type: "skip_steal", payload: {} });
+  }, [sendEvent]);
 
   const handleLeave = useCallback(() => {
     sendEvent({ type: "leave_room", payload: {} });
