@@ -138,6 +138,7 @@ class GameStatePayload(BaseModel):
     deck_count: int
     scores: dict[str, int]        # nickname → スコア
     current_player: str           # nickname
+    phase: GamePhase
 
 
 class PlayerRanking(BaseModel):

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { WebSocketService } from "@/services/websocketService";
 import { type ClientEvent, type ServerEvent } from "@/types/websocket";
 import {
+  type GamePhase,
   type GameState,
   initialGameState,
 } from "@/types/game";
@@ -27,6 +28,7 @@ type GameAction =
       deckCount: number;
       scores: Record<string, number>;
       currentPlayer: string;
+      phase: GamePhase;
     }
   | {
       type: "GAME_ENDED";
@@ -176,18 +178,18 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           score: action.scores[nickname] ?? 0,
         };
       });
-      // steal/skip_steal 後に game_state が届いたとき、phase を drawn に更新
+      // サーバーの authoritative な phase を使用する
       const newPhase =
-        action.currentPlayer === state.myNickname && state.phase === "steal"
-          ? "drawn"
-          : state.phase;
+        action.currentPlayer === state.myNickname
+          ? action.phase   // 自分のターン: サーバーの phase をそのまま使用
+          : state.phase;   // 他プレイヤーのターン: waiting を維持
       return {
         ...state,
         players: updatedPlayers,
         deckCount: action.deckCount,
         currentPlayer: action.currentPlayer,
         phase: newPhase,
-        stealableTargets: newPhase === "drawn" ? {} : state.stealableTargets,
+        stealableTargets: newPhase !== "steal" ? {} : state.stealableTargets,
       };
     }
 
@@ -310,6 +312,7 @@ export const useWebSocket = (
             deckCount: event.payload.deck_count,
             scores: event.payload.scores,
             currentPlayer: event.payload.current_player,
+            phase: event.payload.phase,
           });
           break;
 

@@ -1,3 +1,5 @@
+import type { GamePhase } from "@/types/game";
+
 // クライアント → サーバー イベント
 
 export type ClientEvent =
@@ -79,6 +81,7 @@ export type ServerEvent =
         deck_count: number;
         scores: Record<string, number>;
         current_player: string;
+        phase: GamePhase;
       };
     }
   | {

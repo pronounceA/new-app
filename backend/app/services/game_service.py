@@ -426,6 +426,7 @@ class GameService:
                     deck_count=deck_count,
                     scores=scores,
                     current_player=turn.current_nickname,
+                    phase=turn.phase,
                 ).model_dump(),
             },
         )
