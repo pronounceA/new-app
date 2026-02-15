@@ -21,6 +21,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     return null;
   }
 
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -44,6 +45,23 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           カードを引く
         </Button>
+      )}
+
+      {phase === "drawn" && (
+        <>
+          <Button
+            onClick={() => sendEvent({ type: "draw_card", payload: {} })}
+            className="bg-blue-600 hover:bg-blue-500"
+          >
+            もう1枚引く
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => sendEvent({ type: "end_turn", payload: {} })}
+          >
+            ターン終了
+          </Button>
+        </>
       )}
 
       {phase === "steal" && (

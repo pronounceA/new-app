@@ -11,6 +11,7 @@ export type ClientEvent =
       payload: { target_player_id: string; card_number: number };
     }
   | { type: "skip_steal"; payload: Record<string, never> }
+  | { type: "end_turn"; payload: Record<string, never> }
   | { type: "leave_room"; payload: Record<string, never> };
 
 // サーバー → クライアント イベント

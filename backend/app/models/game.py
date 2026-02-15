@@ -31,6 +31,7 @@ class RoomStatus(str, Enum):
 class GamePhase(str, Enum):
     SCORE = "score"
     DRAW = "draw"
+    DRAWN = "drawn"  # カードを引いた後（もう1枚引くかターン終了を選択）
     STEAL = "steal"
 
 

@@ -218,9 +218,10 @@ class GameService:
         await self._broadcast_game_state(room_id)
 
     async def draw_card(self, player_id: str, room_id: str) -> None:
-        nickname, turn = await self._validate_turn(
-            room_id, player_id, GamePhase.DRAW
-        )
+        # DRAW（ターン開始時）とDRAWN（もう1枚引く）どちらのフェーズでも許可
+        nickname, turn = await self._validate_turn(room_id, player_id, expected_phase=None)
+        if turn.phase not in (GamePhase.DRAW, GamePhase.DRAWN):
+            raise GameError("INVALID_PHASE", f"現在のフェーズは '{turn.phase.value}' です")
 
         card = await self.redis.draw_card(room_id)
         if card is None:
@@ -258,9 +259,10 @@ class GameService:
         steal_targets = await self._find_steal_targets(room_id, nickname, card)
         if steal_targets:
             await self.redis.set_turn(room_id, nickname, GamePhase.STEAL, drawn_card=card)
-            await self._broadcast_game_state(room_id)
         else:
-            await self._advance_turn(room_id, nickname)
+            # 通常ドロー: ターン継続（プレイヤーがもう1枚引くかターン終了を選択）
+            await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
+        await self._broadcast_game_state(room_id)
 
     async def steal_card(
         self,
@@ -302,12 +304,20 @@ class GameService:
                 ).model_dump(),
             },
         )
-        await self._advance_turn(room_id, nickname)
+        # 横取り後: ターン継続（プレイヤーがもう1枚引くかターン終了を選択）
+        await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
+        await self._broadcast_game_state(room_id)
 
     async def skip_steal(self, player_id: str, room_id: str) -> None:
         nickname, turn = await self._validate_turn(
             room_id, player_id, GamePhase.STEAL
         )
+        # スキップ後: ターン継続（プレイヤーがもう1枚引くかターン終了を選択）
+        await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
+        await self._broadcast_game_state(room_id)
+
+    async def end_turn(self, player_id: str, room_id: str) -> None:
+        nickname, _ = await self._validate_turn(room_id, player_id, GamePhase.DRAWN)
         await self._advance_turn(room_id, nickname)
 
     # ---------------------------------------------------------------------------

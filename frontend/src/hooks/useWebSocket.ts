@@ -88,7 +88,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           }
         });
         phase =
-          Object.keys(stealableTargets).length > 0 ? "steal" : "waiting";
+          Object.keys(stealableTargets).length > 0 ? "steal" : "drawn";
       }
       return {
         ...state,
@@ -176,11 +176,18 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           score: action.scores[nickname] ?? 0,
         };
       });
+      // steal/skip_steal 後に game_state が届いたとき、phase を drawn に更新
+      const newPhase =
+        action.currentPlayer === state.myNickname && state.phase === "steal"
+          ? "drawn"
+          : state.phase;
       return {
         ...state,
         players: updatedPlayers,
         deckCount: action.deckCount,
         currentPlayer: action.currentPlayer,
+        phase: newPhase,
+        stealableTargets: newPhase === "drawn" ? {} : state.stealableTargets,
       };
     }
 

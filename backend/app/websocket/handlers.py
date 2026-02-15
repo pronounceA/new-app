@@ -58,6 +58,8 @@ class EventHandler:
                     await self._handle_steal_card(player_id, room_id, payload)
                 case "skip_steal":
                     await self._handle_skip_steal(player_id, room_id, payload)
+                case "end_turn":
+                    await self._handle_end_turn(player_id, room_id, payload)
                 case "leave_room":
                     await self._handle_leave_room(player_id, room_id, payload)
                 case _:
@@ -138,6 +140,12 @@ class EventHandler:
     ) -> None:
         SkipStealPayload(**payload)
         await self.service.skip_steal(player_id=player_id, room_id=room_id)
+
+    async def _handle_end_turn(
+        self, player_id: str, room_id: str, payload: dict
+    ) -> None:
+        StartGamePayload(**payload)  # 空ペイロード検証
+        await self.service.end_turn(player_id=player_id, room_id=room_id)
 
     async def _handle_leave_room(
         self, player_id: str, room_id: str, payload: dict
