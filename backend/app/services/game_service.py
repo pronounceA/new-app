@@ -326,8 +326,8 @@ class GameService:
 
     @staticmethod
     def _is_burst(field: list[int], drawn_card: int) -> bool:
-        """バースト条件: 場が3枚以上 かつ 引いたカードと同じ数字が2枚以上（自分を含む）。"""
-        return len(field) >= 3 and field.count(drawn_card) >= 2
+        """バースト条件: 場が4枚以上 かつ 引いたカードと同じ数字が2枚以上（自分を含む）。"""
+        return len(field) >= 4 and field.count(drawn_card) >= 2
 
     async def _handle_burst(self, room_id: str, nickname: str) -> None:
         lost_cards = await self.redis.clear_field(room_id, nickname)
