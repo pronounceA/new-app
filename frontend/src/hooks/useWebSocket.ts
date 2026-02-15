@@ -9,7 +9,7 @@ import {
 
 type GameAction =
   | { type: "ROOM_CREATED"; roomId: string }
-  | { type: "PLAYER_JOINED"; players: string[] }
+  | { type: "PLAYER_JOINED"; roomId: string; players: string[] }
   | {
       type: "GAME_STARTED";
       players: string[];
@@ -48,7 +48,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           score: state.players[nickname]?.score ?? 0,
         };
       });
-      return { ...state, players, playerOrder: action.players };
+      return { ...state, roomId: action.roomId, roomStatus: "waiting", players, playerOrder: action.players };
     }
 
     case "GAME_STARTED": {
@@ -231,7 +231,7 @@ export const useWebSocket = (
           break;
 
         case "player_joined":
-          dispatch({ type: "PLAYER_JOINED", players: event.payload.players });
+          dispatch({ type: "PLAYER_JOINED", roomId: event.payload.room_id, players: event.payload.players });
           if (event.payload.nickname !== nickname) {
             toast.info(`${event.payload.nickname} が参加しました`);
           }

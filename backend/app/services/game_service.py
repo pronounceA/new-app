@@ -64,6 +64,7 @@ class GameService:
             {
                 "type": "player_joined",
                 "payload": PlayerJoinedPayload(
+                    room_id=room_id,
                     nickname=nickname,
                     player_count=len(nicknames),
                     players=nicknames,
@@ -95,6 +96,7 @@ class GameService:
                 {
                     "type": "player_joined",
                     "payload": PlayerJoinedPayload(
+                        room_id=room_id,
                         nickname=existing_nickname,
                         player_count=len(nicknames),
                         players=nicknames,
@@ -123,6 +125,7 @@ class GameService:
             {
                 "type": "player_joined",
                 "payload": PlayerJoinedPayload(
+                    room_id=room_id,
                     nickname=nickname,
                     player_count=len(nicknames),
                     players=nicknames,

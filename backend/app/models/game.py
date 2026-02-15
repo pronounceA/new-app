@@ -93,6 +93,7 @@ class RoomCreatedPayload(BaseModel):
 
 
 class PlayerJoinedPayload(BaseModel):
+    room_id: str
     nickname: str
     player_count: int
     players: list[str]  # nicknames

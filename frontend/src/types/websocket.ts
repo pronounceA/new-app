@@ -20,6 +20,7 @@ export type ServerEvent =
   | {
       type: "player_joined";
       payload: {
+        room_id: string;
         nickname: string;
         player_count: number;
         players: string[];
