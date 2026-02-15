@@ -3,12 +3,14 @@
 export type ClientEvent =
   | { type: "create_room"; payload: { nickname: string; max_players: number } }
   | { type: "join_room"; payload: { room_id: string; nickname: string } }
+  | { type: "start_game"; payload: Record<string, never> }
   | { type: "score_cards"; payload: Record<string, never> }
   | { type: "draw_card"; payload: Record<string, never> }
   | {
       type: "steal_card";
       payload: { target_player_id: string; card_number: number };
     }
+  | { type: "skip_steal"; payload: Record<string, never> }
   | { type: "leave_room"; payload: Record<string, never> };
 
 // サーバー → クライアント イベント

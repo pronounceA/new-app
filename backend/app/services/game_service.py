@@ -84,6 +84,26 @@ class GameService:
         room = await self.redis.get_room(room_id)
         if room is None:
             raise GameError("ROOM_NOT_FOUND", f"ルーム '{room_id}' が見つかりません")
+
+        # 再接続: 同じplayer_idが既にルームに存在する場合はスキップして再参加
+        existing_nickname = await self.redis.get_nickname(room_id, player_id)
+        if existing_nickname:
+            await self.manager.move_player("lobby", room_id, player_id, ws)
+            nicknames = await self.redis.get_all_nicknames(room_id)
+            await self.manager.broadcast(
+                room_id,
+                {
+                    "type": "player_joined",
+                    "payload": PlayerJoinedPayload(
+                        nickname=existing_nickname,
+                        player_count=len(nicknames),
+                        players=nicknames,
+                    ).model_dump(),
+                },
+            )
+            logger.info("Player reconnected: room=%s player=%s", room_id, player_id)
+            return
+
         if room.status != RoomStatus.WAITING:
             raise GameError("GAME_NOT_STARTED", "ゲームはすでに開始されています")
 
@@ -153,9 +173,10 @@ class GameService:
         nickname = await self.redis.get_nickname(room_id, player_id)
         await self.redis.remove_player(room_id, player_id)
         player_count = await self.redis.get_player_count(room_id)
-        if player_count == 0:
+        room = await self.redis.get_room(room_id)
+        if player_count == 0 and room and room.status == RoomStatus.PLAYING:
             await self.redis.delete_room(room_id)
-            logger.info("Room deleted (empty): room=%s", room_id)
+            logger.info("Room deleted (empty, was playing): room=%s", room_id)
         else:
             logger.info(
                 "Player disconnected: room=%s player=%s nickname=%s",

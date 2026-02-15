@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,18 @@ const GamePage: React.FC = () => {
   const nickname = state?.nickname ?? localStorage.getItem("nickname") ?? "";
 
   const { gameState, isConnected, sendEvent } = useWebSocket(playerId, nickname);
+
+  // WebSocket接続後にjoin_roomを送信してルームに再登録する
+  const hasJoinedRef = useRef(false);
+  useEffect(() => {
+    if (isConnected && roomId && !hasJoinedRef.current) {
+      hasJoinedRef.current = true;
+      sendEvent({ type: "join_room", payload: { room_id: roomId, nickname } });
+    }
+    if (!isConnected) {
+      hasJoinedRef.current = false;
+    }
+  }, [isConnected, roomId, nickname, sendEvent]);
 
   const handleSkipSteal = useCallback(() => {
     // steal フェーズをスキップ（turn_changed を待つ）
@@ -62,7 +74,7 @@ const GamePage: React.FC = () => {
             <Button
               size="sm"
               onClick={() =>
-                sendEvent({ type: "create_room", payload: { nickname, max_players: 4 } })
+                sendEvent({ type: "start_game", payload: {} })
               }
               disabled={gameState.playerOrder.length < 2}
             >
