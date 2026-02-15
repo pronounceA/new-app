@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
       >
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            カードゲーム
+            だるまあつめ
           </h1>
           <p className="text-muted-foreground text-sm">
             2〜6人でプレイできるリアルタイムカードゲーム

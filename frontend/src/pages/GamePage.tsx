@@ -43,7 +43,7 @@ const GamePage: React.FC = () => {
       >
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-foreground">
-            カードゲーム
+            だるまあつめ
           </span>
           <Badge variant="outline" className="text-xs">
             ルーム: {roomId}

@@ -1,12 +1,16 @@
-import os
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+import redis.asyncio as aioredis
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import redis.asyncio as aioredis
+
+from app.redis.client import RedisClient
+from app.services.game_service import GameService
+from app.websocket.handlers import EventHandler
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "info").upper())
 logger = logging.getLogger(__name__)
@@ -43,7 +47,7 @@ cors_origins = [
     if origin.strip()
 ]
 
-app = FastAPI(title="Card Game API", lifespan=lifespan)
+app = FastAPI(title="だるまあつめ API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,6 +81,20 @@ class ConnectionManager:
                 del self.rooms[room_id]
         logger.info("Disconnected: player=%s room=%s", player_id, room_id)
 
+    async def move_player(
+        self,
+        from_room: str,
+        to_room: str,
+        player_id: str,
+        ws: WebSocket,
+    ) -> None:
+        """プレイヤーをfrom_roomからto_roomに移動する（lobby→実ルームID）。"""
+        self.disconnect(from_room, player_id)
+        if to_room not in self.rooms:
+            self.rooms[to_room] = {}
+        self.rooms[to_room][player_id] = ws
+        logger.info("Moved: player=%s %s -> %s", player_id, from_room, to_room)
+
     async def broadcast(self, room_id: str, message: dict) -> None:
         if room_id not in self.rooms:
             return
@@ -105,8 +123,11 @@ async def health_check() -> dict[str, str]:
 
 @app.get("/rooms")
 async def list_rooms() -> list[dict]:
-    """公開ルーム一覧（今後実装予定）"""
-    return []
+    """waitingステータスのルーム一覧を返す。"""
+    if redis_client is None:
+        return []
+    redis_c = RedisClient(redis_client)
+    return await redis_c.list_waiting_rooms()
 
 
 # ---------------------------------------------------------------------------
@@ -115,10 +136,14 @@ async def list_rooms() -> list[dict]:
 
 @app.websocket("/ws/{player_id}")
 async def websocket_endpoint(ws: WebSocket, player_id: str) -> None:
-    # 暫定: player_id をルームIDとして扱わず、接続確認のみ行うスケルトン
-    # ゲームロジックは今後 app/services/ に実装する
     room_id = "lobby"
     await manager.connect(room_id, player_id, ws)
+
+    assert redis_client is not None
+    redis_c = RedisClient(redis_client)
+    game_svc = GameService(redis_c, manager)
+    handler = EventHandler(game_svc)
+
     try:
         while True:
             raw = await ws.receive_text()
@@ -127,25 +152,26 @@ async def websocket_endpoint(ws: WebSocket, player_id: str) -> None:
             except json.JSONDecodeError:
                 await manager.send_personal(
                     ws,
-                    {"type": "error", "payload": {"message": "Invalid JSON", "code": "INVALID_JSON"}},
+                    {
+                        "type": "error",
+                        "payload": {
+                            "message": "Invalid JSON",
+                            "code": "INVALID_JSON",
+                        },
+                    },
                 )
                 continue
 
             event_type: str = event.get("type", "")
-            logger.debug("Received event: type=%s player=%s", event_type, player_id)
-
-            # TODO: ゲームロジックの実装
-            # 現時点ではエコーバックのみ
-            await manager.send_personal(
-                ws,
-                {
-                    "type": "error",
-                    "payload": {
-                        "message": f"イベント '{event_type}' は未実装です",
-                        "code": "NOT_IMPLEMENTED",
-                    },
-                },
+            logger.debug(
+                "Event: type=%s player=%s room=%s", event_type, player_id, room_id
             )
+
+            new_room_id = await handler.handle(ws, player_id, room_id, event)
+            if new_room_id:
+                room_id = new_room_id
 
     except WebSocketDisconnect:
         manager.disconnect(room_id, player_id)
+        if room_id != "lobby":
+            await game_svc.handle_disconnect(player_id, room_id)
