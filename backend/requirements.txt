@@ -1,0 +1,23 @@
+# Web フレームワーク
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# WebSocket
+websockets==13.0.1
+
+# Redis クライアント（async対応）
+redis[hiredis]==5.0.8
+
+# データバリデーション
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# テスト
+pytest==8.3.3
+pytest-asyncio==0.24.0
+httpx==0.27.2
+
+# コードスタイル
+black==24.8.0
+ruff==0.6.8
+mypy==1.11.2
