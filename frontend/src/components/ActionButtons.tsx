@@ -66,13 +66,13 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
       {phase === "steal" && (
         <>
-          <p className="text-sm text-yellow-400 self-center">
-            カードをドラッグして横取り、またはスキップ
-          </p>
           <Button
-            variant="outline"
-            onClick={onSkipSteal}
+            onClick={() => sendEvent({ type: "steal_card", payload: {} })}
+            className="bg-yellow-600 hover:bg-yellow-500"
           >
+            横取り
+          </Button>
+          <Button variant="outline" onClick={onSkipSteal}>
             スキップ
           </Button>
         </>

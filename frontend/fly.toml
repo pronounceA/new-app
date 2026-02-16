@@ -1,0 +1,24 @@
+# fly.toml — フロントエンド
+# デプロイ前に以下を実際の値に変更してください:
+#   app = "<your-app>-frontend"
+#   VITE_API_URL = "https://<your-app>-backend.fly.dev"
+#   VITE_WS_URL  = "wss://<your-app>-backend.fly.dev/ws"
+
+app = "daruma-atsume-frontend"
+primary_region = "nrt"
+
+[build]
+  [build.args]
+    VITE_API_URL = "https://daruma-atsume-backend.fly.dev"
+    VITE_WS_URL  = "wss://daruma-atsume-backend.fly.dev/ws"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

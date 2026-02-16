@@ -193,11 +193,12 @@ class RedisClient:
     # デッキ操作
     # ---------------------------------------------------------------------------
 
-    async def initialize_deck(self, room_id: str) -> None:
+    async def initialize_deck(self, room_id: str, deck_size: int = 110) -> None:
         deck: list[int] = []
         for card, count in CARD_DISTRIBUTION.items():
             deck.extend([card] * count)
         random.shuffle(deck)
+        deck = deck[:deck_size]  # 先頭から deck_size 枚に切り出す
         key = self._deck_key(room_id)
         await self.redis.delete(key)
         await self.redis.rpush(key, *[str(c) for c in deck])  # type: ignore[arg-type]

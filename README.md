@@ -200,53 +200,9 @@ docker-compose up -d --build
 | `game_ended` | `{winner, rankings}` | ゲーム終了 |
 | `error` | `{message, code}` | エラー通知 |
 
-## デプロイ
+## デプロイ（Fly.io）
 
-### Dockerイメージビルド
-
-```bash
-# バックエンド
-docker build -t card-game-backend:latest ./backend
-
-# フロントエンド
-docker build -t card-game-frontend:latest ./frontend
-```
-
-### クラウドデプロイ
-
-#### 環境変数
-
-**バックエンド (.env)**:
-```env
-REDIS_HOST=<redis-host>
-REDIS_PORT=6379
-REDIS_PASSWORD=<password>
-CORS_ORIGINS=https://your-frontend-domain.com
-```
-
-**フロントエンド (.env)**:
-```env
-VITE_API_URL=https://your-backend-domain.com
-VITE_WS_URL=wss://your-backend-domain.com/ws
-```
-
-#### デプロイ手順（概要）
-
-1. **コンテナレジストリにプッシュ**
-   - Docker Hub / ECR / GCR / ACR
-
-2. **Redisインスタンスのセットアップ**
-   - AWS ElastiCache / GCP Memorystore / Azure Cache for Redis
-
-3. **アプリケーションデプロイ**
-   - AWS ECS / GCP Cloud Run / Azure Container Instances
-   - または Kubernetes (EKS / GKE / AKS)
-
-4. **ロードバランサー・DNS設定**
-   - HTTPSを有効化
-   - WebSocket接続のタイムアウト設定を調整
-
-詳細なデプロイ手順は各クラウドプロバイダーのドキュメントを参照してください。
+詳細な手順は [docs/deploy-flyio.md](docs/deploy-flyio.md) を参照してください。
 
 ## 今後の開発予定
 

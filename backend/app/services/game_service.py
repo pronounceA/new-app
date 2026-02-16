@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 
 from fastapi import WebSocket
@@ -150,7 +151,8 @@ class GameService:
             raise GameError("INVALID_PHASE", "ゲーム開始には2人以上必要です")
 
         await self.redis.set_room_status(room_id, RoomStatus.PLAYING)
-        await self.redis.initialize_deck(room_id)
+        deck_size = int(os.getenv("DECK_SIZE", "110"))
+        await self.redis.initialize_deck(room_id, deck_size=deck_size)
 
         nicknames = await self.redis.get_all_nicknames(room_id)
         await self.redis.initialize_scores(room_id, nicknames)
@@ -264,46 +266,31 @@ class GameService:
             await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
         await self._broadcast_game_state(room_id)
 
-    async def steal_card(
-        self,
-        player_id: str,
-        room_id: str,
-        target_nickname: str,
-        card_number: int,
-    ) -> None:
+    async def steal_card(self, player_id: str, room_id: str) -> None:
         nickname, turn = await self._validate_turn(
             room_id, player_id, GamePhase.STEAL
         )
 
-        # 引いたカードとの一致確認
-        if turn.drawn_card != card_number:
-            raise GameError(
-                "CANNOT_STEAL",
-                f"横取りできるのは引いたカード({turn.drawn_card})のみです",
+        card = turn.drawn_card
+        targets = await self._find_steal_targets(room_id, nickname, card)
+        if not targets:
+            raise GameError("CANNOT_STEAL", "横取り対象が存在しません")
+
+        for target_nickname in targets:
+            await self.redis.remove_card_from_field(room_id, target_nickname, card)
+            await self.redis.add_score(room_id, nickname, card)
+            await self.manager.broadcast(
+                room_id,
+                {
+                    "type": "card_stolen",
+                    "payload": CardStolenPayload(
+                        from_player=target_nickname,
+                        to_player=nickname,
+                        card=card,
+                    ).model_dump(),
+                },
             )
 
-        # 対象プレイヤーの場に該当カードがあるか確認
-        target_field = await self.redis.get_field(room_id, target_nickname)
-        if card_number not in target_field:
-            raise GameError(
-                "CANNOT_STEAL",
-                f"プレイヤー '{target_nickname}' の場にカード {card_number} がありません",
-            )
-
-        await self.redis.remove_card_from_field(room_id, target_nickname, card_number)
-        await self.redis.add_score(room_id, nickname, card_number)
-
-        await self.manager.broadcast(
-            room_id,
-            {
-                "type": "card_stolen",
-                "payload": CardStolenPayload(
-                    from_player=target_nickname,
-                    to_player=nickname,
-                    card=card_number,
-                ).model_dump(),
-            },
-        )
         # 横取り後: ターン継続（プレイヤーがもう1枚引くかターン終了を選択）
         await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
         await self._broadcast_game_state(room_id)

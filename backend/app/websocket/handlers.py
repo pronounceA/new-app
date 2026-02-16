@@ -127,13 +127,8 @@ class EventHandler:
     async def _handle_steal_card(
         self, player_id: str, room_id: str, payload: dict
     ) -> None:
-        data = StealCardPayload(**payload)
-        await self.service.steal_card(
-            player_id=player_id,
-            room_id=room_id,
-            target_nickname=data.target_player_id,
-            card_number=data.card_number,
-        )
+        StealCardPayload(**payload)  # 空ペイロード検証のみ
+        await self.service.steal_card(player_id=player_id, room_id=room_id)
 
     async def _handle_skip_steal(
         self, player_id: str, room_id: str, payload: dict

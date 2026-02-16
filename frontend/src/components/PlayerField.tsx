@@ -1,4 +1,3 @@
-import { useDroppable } from "@dnd-kit/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Card from "@/components/Card";
@@ -10,8 +9,8 @@ interface PlayerFieldProps {
   score: number;
   isCurrentPlayer: boolean;
   isMyField: boolean;
-  // steal フェーズ: このプレイヤーのカードが横取り対象かどうか
-  isStealTarget?: boolean;
+  // steal フェーズ: 横取り対象のカード番号（null の場合は非対象）
+  stealableCardNumber?: number | null;
   // バースト発生中（アニメーション用）
   isBursting?: boolean;
   // 直前に引いたカードの数字（新着カードのアニメーション用）
@@ -24,28 +23,22 @@ const PlayerField: React.FC<PlayerFieldProps> = ({
   score,
   isCurrentPlayer,
   isMyField,
-  isStealTarget = false,
+  stealableCardNumber = null,
   isBursting = false,
   lastDrawnCard,
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `field-${nickname}`,
-    data: { targetNickname: nickname },
-    disabled: !isStealTarget,
-  });
+  const isStealTarget = stealableCardNumber != null;
 
   return (
     <motion.div
       layout
-      ref={setNodeRef}
       className={cn(
         "rounded-xl border-2 p-3 transition-colors",
         isMyField
           ? "border-blue-500 bg-blue-950/40"
           : "border-slate-600 bg-slate-900/40",
         isCurrentPlayer && "border-green-500",
-        isStealTarget && "border-yellow-400 bg-yellow-950/30",
-        isOver && "bg-yellow-900/50 border-yellow-300"
+        isStealTarget && "border-yellow-400 bg-yellow-950/30"
       )}
     >
       {/* プレイヤー情報 */}
@@ -91,23 +84,12 @@ const PlayerField: React.FC<PlayerFieldProps> = ({
                 number={cardNumber}
                 isNew={!isBursting && index === field.length - 1 && cardNumber === lastDrawnCard}
                 isBursting={isBursting}
-                isStealable={isStealTarget}
+                isStealable={stealableCardNumber != null && cardNumber === stealableCardNumber}
               />
             ))
           )}
         </AnimatePresence>
       </div>
-
-      {/* ドロップゾーンのヒント */}
-      {isStealTarget && (
-        <motion.p
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-xs text-yellow-400 mt-1"
-        >
-          カードをここにドロップして横取り
-        </motion.p>
-      )}
     </motion.div>
   );
 };

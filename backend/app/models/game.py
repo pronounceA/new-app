@@ -73,8 +73,7 @@ class DrawCardPayload(BaseModel):
 
 
 class StealCardPayload(BaseModel):
-    target_player_id: str  # 実際にはnicknameを受け取る（仕様に従い命名はそのまま）
-    card_number: int = Field(ge=1, le=10)
+    pass  # ペイロードなし（サーバーがturn.drawn_cardを把握）
 
 
 class SkipStealPayload(BaseModel):

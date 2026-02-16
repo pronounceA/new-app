@@ -1,17 +1,8 @@
-import { useCallback } from "react";
-import {
-  DndContext,
-  DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
 import { motion, AnimatePresence } from "framer-motion";
 import PlayerField from "@/components/PlayerField";
 import ScoreBoard from "@/components/ScoreBoard";
 import TurnIndicator from "@/components/TurnIndicator";
 import ActionButtons from "@/components/ActionButtons";
-import DraggableCard from "@/components/DraggableCard";
 import { type GameState } from "@/types/game";
 import { type ClientEvent } from "@/types/websocket";
 
@@ -21,11 +12,11 @@ interface GameBoardProps {
   onSkipSteal: () => void;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({
+const GameBoard = ({
   gameState,
   sendEvent,
   onSkipSteal,
-}) => {
+}: GameBoardProps) => {
   const {
     players,
     playerOrder,
@@ -38,31 +29,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
   } = gameState;
 
   const isMyTurn = currentPlayer === myNickname;
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { over, active } = event;
-      if (!over) return;
-
-      const targetNickname = over.data.current?.targetNickname as string | undefined;
-      const cardNumber = active.data.current?.cardNumber as number | undefined;
-
-      if (targetNickname && cardNumber !== undefined && stealableTargets[targetNickname] === cardNumber) {
-        sendEvent({
-          type: "steal_card",
-          payload: {
-            target_player_id: targetNickname,
-            card_number: cardNumber,
-          },
-        });
-      }
-    },
-    [sendEvent, stealableTargets]
-  );
 
   // ゲーム終了表示
   if (phase === "finished") {
@@ -95,90 +61,72 @@ const GameBoard: React.FC<GameBoardProps> = ({
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex h-full gap-4">
-        {/* メインフィールド */}
-        <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
-          {/* ターン表示 */}
-          <TurnIndicator
-            currentPlayer={currentPlayer}
-            phase={phase}
-            isMyTurn={isMyTurn}
-          />
+    <div className="flex h-full gap-4">
+      {/* メインフィールド */}
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+        {/* ターン表示 */}
+        <TurnIndicator
+          currentPlayer={currentPlayer}
+          phase={phase}
+          isMyTurn={isMyTurn}
+        />
 
-          {/* プレイヤーフィールド */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <AnimatePresence>
-              {playerOrder.map((nickname) => {
-                const playerState = players[nickname];
-                if (!playerState) return null;
-
-                return (
-                  <motion.div
-                    key={nickname}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <PlayerField
-                      nickname={nickname}
-                      field={playerState.field}
-                      score={playerState.score}
-                      isCurrentPlayer={nickname === currentPlayer}
-                      isMyField={nickname === myNickname}
-                      isStealTarget={
-                        phase === "steal" && nickname !== myNickname && nickname in stealableTargets
-                      }
-                      lastDrawnCard={lastDrawnCard}
-                    />
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-
-          {/* steal フェーズ: 自分が引いたカードをドラッグ可能で表示 */}
+        {/* プレイヤーフィールド */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <AnimatePresence>
-            {phase === "steal" && lastDrawnCard !== null && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex justify-center items-center gap-3"
-              >
-                <p className="text-sm text-yellow-400">引いたカード:</p>
-                <DraggableCard
-                  number={lastDrawnCard}
-                  dragId="my-drawn-card"
-                />
-              </motion.div>
-            )}
+            {playerOrder.map((nickname) => {
+              const playerState = players[nickname];
+              if (!playerState) return null;
+
+              return (
+                <motion.div
+                  key={nickname}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <PlayerField
+                    nickname={nickname}
+                    field={playerState.field}
+                    score={playerState.score}
+                    isCurrentPlayer={nickname === currentPlayer}
+                    isMyField={nickname === myNickname}
+                    stealableCardNumber={
+                      phase === "steal" && nickname !== myNickname && nickname in stealableTargets
+                        ? stealableTargets[nickname]
+                        : null
+                    }
+                    lastDrawnCard={lastDrawnCard}
+                  />
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
-
-          {/* アクションボタン */}
-          <ActionButtons
-            phase={phase}
-            isMyTurn={isMyTurn}
-            hasFieldCards={(players[myNickname]?.field.length ?? 0) > 0}
-            sendEvent={sendEvent}
-            onSkipSteal={onSkipSteal}
-          />
         </div>
 
-        {/* サイドバー（スコアボード） */}
-        <div className="w-48 flex-shrink-0">
-          <ScoreBoard
-            players={players}
-            playerOrder={playerOrder}
-            currentPlayer={currentPlayer}
-            deckCount={deckCount}
-            myNickname={myNickname}
-          />
-        </div>
+        {/* アクションボタン */}
+        <ActionButtons
+          phase={phase}
+          isMyTurn={isMyTurn}
+          hasFieldCards={(players[myNickname]?.field.length ?? 0) > 0}
+          sendEvent={sendEvent}
+          onSkipSteal={onSkipSteal}
+        />
       </div>
-    </DndContext>
+
+      {/* サイドバー（スコアボード） */}
+      <div className="w-48 flex-shrink-0">
+        <ScoreBoard
+          players={players}
+          playerOrder={playerOrder}
+          currentPlayer={currentPlayer}
+          deckCount={deckCount}
+          myNickname={myNickname}
+        />
+      </div>
+    </div>
   );
 };
 

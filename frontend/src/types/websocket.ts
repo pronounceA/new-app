@@ -8,10 +8,7 @@ export type ClientEvent =
   | { type: "start_game"; payload: Record<string, never> }
   | { type: "score_cards"; payload: Record<string, never> }
   | { type: "draw_card"; payload: Record<string, never> }
-  | {
-      type: "steal_card";
-      payload: { target_player_id: string; card_number: number };
-    }
+  | { type: "steal_card"; payload: Record<string, never> }
   | { type: "skip_steal"; payload: Record<string, never> }
   | { type: "end_turn"; payload: Record<string, never> }
   | { type: "leave_room"; payload: Record<string, never> };
