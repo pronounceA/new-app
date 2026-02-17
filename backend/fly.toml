@@ -5,6 +5,9 @@ primary_region = "nrt"
 
 [build]
 
+[env]
+  CORS_ORIGINS = "https://daruma-atsume-frontend.fly.dev"
+
 [http_service]
   internal_port = 8000
   force_https = true
