@@ -10,7 +10,7 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/game/:roomId" element={<GamePage />} />
       </Routes>
-      <Toaster position="top-right" richColors />
+      <Toaster position="bottom-right" richColors />
     </BrowserRouter>
   );
 };

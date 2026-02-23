@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 依存関係のインストール
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# アプリケーションコードをコピー
+COPY . .
+
+# Vite開発サーバーを起動
+# --host 0.0.0.0 で外部からアクセス可能に
+# --port 3000 でポート指定
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]

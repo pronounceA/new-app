@@ -12,5 +12,11 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 3000,
+    watch: {
+      usePolling: true, // Docker/WSL2環境でホットリロードを有効化
+    },
+    hmr: {
+      host: 'localhost', // HMRのホスト設定
+    },
   },
 });
