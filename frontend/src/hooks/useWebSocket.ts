@@ -225,6 +225,14 @@ export const useWebSocket = (
     initialGameState(playerId, nickname)
   );
 
+  // 最新のplayerOrderを保持するRef
+  const playerOrderRef = useRef<string[]>(gameState.playerOrder);
+
+  // gameStateが更新されたらRefも更新
+  useEffect(() => {
+    playerOrderRef.current = gameState.playerOrder;
+  }, [gameState.playerOrder]);
+
   useEffect(() => {
     const service = new WebSocketService(wsUrl);
     serviceRef.current = service;
@@ -239,12 +247,18 @@ export const useWebSocket = (
           toast.success(`ルーム ${event.payload.room_id} を作成しました`);
           break;
 
-        case "player_joined":
+        case "player_joined": {
+          // 既存プレイヤーかどうかをチェック（再参加の場合は通知しない）
+          const wasAlreadyInRoom = playerOrderRef.current.includes(event.payload.nickname);
+
           dispatch({ type: "PLAYER_JOINED", roomId: event.payload.room_id, players: event.payload.players });
-          if (event.payload.nickname !== nickname) {
+
+          // 自分以外 かつ 新規参加の場合のみ通知
+          if (event.payload.nickname !== nickname && !wasAlreadyInRoom) {
             toast.info(`${event.payload.nickname} が参加しました`);
           }
           break;
+        }
 
         case "game_started":
           dispatch({
