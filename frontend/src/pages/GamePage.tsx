@@ -75,7 +75,7 @@ const GamePage: React.FC = () => {
               onClick={() =>
                 sendEvent({ type: "start_game", payload: {} })
               }
-              disabled={gameState.playerOrder.length < 2}
+              disabled={gameState.playerOrder.length < 2 || gameState.hostNickname !== nickname}
             >
               ゲーム開始
             </Button>
@@ -96,7 +96,7 @@ const GamePage: React.FC = () => {
           >
             <h2 className="text-xl font-semibold">参加待ち</h2>
             <p className="text-muted-foreground text-sm">
-              {gameState.playerOrder.length} / 全員が揃ったらゲーム開始
+              {gameState.playerOrder.length} / {gameState.maxPlayers} 全員が揃ったらゲーム開始
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {gameState.playerOrder.map((player) => (

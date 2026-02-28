@@ -72,7 +72,7 @@ const GameBoard = ({
         />
 
         {/* プレイヤーフィールド */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <AnimatePresence>
             {playerOrder.map((nickname) => {
               const playerState = players[nickname];
@@ -117,7 +117,7 @@ const GameBoard = ({
       </div>
 
       {/* サイドバー（スコアボード） */}
-      <div className="w-48 flex-shrink-0">
+      <div className="w-64 flex-shrink-0">
         <ScoreBoard
           players={players}
           playerOrder={playerOrder}

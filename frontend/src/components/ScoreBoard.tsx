@@ -44,9 +44,6 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({
               </span>
               <span className="text-sm font-medium">
                 {nickname}
-                {nickname === myNickname && (
-                  <span className="text-xs text-muted-foreground ml-1">（自分）</span>
-                )}
               </span>
               {nickname === currentPlayer && (
                 <Badge variant="default" className="text-xs h-4 px-1">

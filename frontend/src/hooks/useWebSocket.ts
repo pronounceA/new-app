@@ -10,7 +10,7 @@ import {
 
 type GameAction =
   | { type: "ROOM_CREATED"; roomId: string }
-  | { type: "PLAYER_JOINED"; roomId: string; players: string[] }
+  | { type: "PLAYER_JOINED"; roomId: string; players: string[]; maxPlayers: number; hostNickname: string }
   | {
       type: "GAME_STARTED";
       players: string[];
@@ -50,7 +50,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           score: state.players[nickname]?.score ?? 0,
         };
       });
-      return { ...state, roomId: action.roomId, roomStatus: "waiting", players, playerOrder: action.players };
+      return { ...state, roomId: action.roomId, roomStatus: "waiting", maxPlayers: action.maxPlayers, hostNickname: action.hostNickname, players, playerOrder: action.players };
     }
 
     case "GAME_STARTED": {
@@ -145,8 +145,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           },
           [action.toPlayer]: {
             ...state.players[action.toPlayer],
-            score:
-              (state.players[action.toPlayer]?.score ?? 0) + action.card,
+            field: [...(state.players[action.toPlayer]?.field ?? []), action.card],
           },
         },
         stealableTargets: {},
@@ -251,7 +250,7 @@ export const useWebSocket = (
           // 既存プレイヤーかどうかをチェック（再参加の場合は通知しない）
           const wasAlreadyInRoom = playerOrderRef.current.includes(event.payload.nickname);
 
-          dispatch({ type: "PLAYER_JOINED", roomId: event.payload.room_id, players: event.payload.players });
+          dispatch({ type: "PLAYER_JOINED", roomId: event.payload.room_id, players: event.payload.players, maxPlayers: event.payload.max_players, hostNickname: event.payload.host_nickname });
 
           // 自分以外 かつ 新規参加の場合のみ通知
           if (event.payload.nickname !== nickname && !wasAlreadyInRoom) {

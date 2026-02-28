@@ -199,22 +199,3 @@ docker-compose up -d --build
 | `game_state` | `{fields, deck_count, scores, current_player}` | ゲーム状態更新 |
 | `game_ended` | `{winner, rankings}` | ゲーム終了 |
 | `error` | `{message, code}` | エラー通知 |
-
-## デプロイ（Fly.io）
-
-詳細な手順は [docs/deploy-flyio.md](docs/deploy-flyio.md) を参照してください。
-
-## 今後の開発予定
-
-- [ ] だるまあつめのゲーム実装
-- [ ] チャット機能
-- [ ] リプレイ機能
-- [ ] ランキングシステム
-- [ ] ユーザー登録・ログイン（オプション）
-- [ ] スペクテーターモード
-- [ ] パフォーマンス最適化
-- [ ] 自動テスト追加
-
----
-
-**開発ドキュメント**: 詳細な技術仕様やAPI設計は `/docs` ディレクトリを参照してください。

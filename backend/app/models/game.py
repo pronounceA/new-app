@@ -96,6 +96,8 @@ class PlayerJoinedPayload(BaseModel):
     room_id: str
     nickname: str
     player_count: int
+    max_players: int
+    host_nickname: str
     players: list[str]  # nicknames
 
 

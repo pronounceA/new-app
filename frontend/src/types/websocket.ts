@@ -23,6 +23,8 @@ export type ServerEvent =
         room_id: string;
         nickname: string;
         player_count: number;
+        max_players: number;
+        host_nickname: string;
         players: string[];
       };
     }

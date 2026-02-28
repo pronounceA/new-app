@@ -68,6 +68,8 @@ class GameService:
                     room_id=room_id,
                     nickname=nickname,
                     player_count=len(nicknames),
+                    max_players=max_players,
+                    host_nickname=nickname,
                     players=nicknames,
                 ).model_dump(),
             },
@@ -92,6 +94,7 @@ class GameService:
         if existing_nickname:
             await self.manager.move_player("lobby", room_id, player_id, ws)
             nicknames = await self.redis.get_all_nicknames(room_id)
+            host_nickname = await self.redis.get_nickname(room_id, room.host_player_id) or ""
             await self.manager.broadcast(
                 room_id,
                 {
@@ -100,6 +103,8 @@ class GameService:
                         room_id=room_id,
                         nickname=existing_nickname,
                         player_count=len(nicknames),
+                        max_players=room.max_players,
+                        host_nickname=host_nickname,
                         players=nicknames,
                     ).model_dump(),
                 },
@@ -121,6 +126,7 @@ class GameService:
         await self.manager.move_player("lobby", room_id, player_id, ws)
 
         nicknames = await self.redis.get_all_nicknames(room_id)
+        host_nickname = await self.redis.get_nickname(room_id, room.host_player_id) or ""
         await self.manager.broadcast(
             room_id,
             {
@@ -129,6 +135,8 @@ class GameService:
                     room_id=room_id,
                     nickname=nickname,
                     player_count=len(nicknames),
+                    max_players=room.max_players,
+                    host_nickname=host_nickname,
                     players=nicknames,
                 ).model_dump(),
             },
@@ -278,7 +286,7 @@ class GameService:
 
         for target_nickname in targets:
             await self.redis.remove_card_from_field(room_id, target_nickname, card)
-            await self.redis.add_score(room_id, nickname, card)
+            await self.redis.add_to_field(room_id, nickname, card)
             await self.manager.broadcast(
                 room_id,
                 {
@@ -371,6 +379,26 @@ class GameService:
         await self._start_turn(room_id, next_nickname)
 
     async def _end_game(self, room_id: str) -> None:
+        # 場に残っているカードをすべて得点化する
+        nicknames = await self.redis.get_all_nicknames(room_id)
+        for nickname in nicknames:
+            field = await self.redis.get_field(room_id, nickname)
+            if field:
+                points = sum(field)
+                await self.redis.clear_field(room_id, nickname)
+                total_score = await self.redis.add_score(room_id, nickname, points)
+                await self.manager.broadcast(
+                    room_id,
+                    {
+                        "type": "cards_scored",
+                        "payload": CardsScoredPayload(
+                            player=nickname,
+                            cards=field,
+                            score=total_score,
+                        ).model_dump(),
+                    },
+                )
+
         await self.redis.set_room_status(room_id, RoomStatus.FINISHED)
         scores = await self.redis.get_all_scores(room_id)
         sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)

@@ -13,6 +13,8 @@ export interface PlayerState {
 export interface GameState {
   roomId: string | null;
   roomStatus: RoomStatus;
+  maxPlayers: number;
+  hostNickname: string;
   players: Record<string, PlayerState>;
   playerOrder: string[];
   currentPlayer: string | null;
@@ -42,6 +44,8 @@ export const initialGameState = (
 ): GameState => ({
   roomId: null,
   roomStatus: "waiting",
+  maxPlayers: 0,
+  hostNickname: "",
   players: {},
   playerOrder: [],
   currentPlayer: null,
