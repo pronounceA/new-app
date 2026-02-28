@@ -1,6 +1,6 @@
 // ゲーム状態の型定義
 
-export type GamePhase = "score" | "draw" | "drawn" | "steal" | "waiting" | "finished";
+export type GamePhase = "score" | "draw" | "drawn" | "steal" | "burst" | "waiting" | "finished";
 
 export type RoomStatus = "waiting" | "playing" | "finished";
 

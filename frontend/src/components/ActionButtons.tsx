@@ -64,6 +64,15 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         </>
       )}
 
+      {phase === "burst" && (
+        <Button
+          onClick={() => sendEvent({ type: "confirm_burst", payload: {} })}
+          className="bg-red-600 hover:bg-red-500"
+        >
+          バースト
+        </Button>
+      )}
+
       {phase === "steal" && (
         <>
           <Button

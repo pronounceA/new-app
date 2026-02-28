@@ -6,6 +6,7 @@ from fastapi import WebSocket
 from pydantic import ValidationError
 
 from app.models.game import (
+    ConfirmBurstPayload,
     CreateRoomPayload,
     DrawCardPayload,
     GameError,
@@ -58,6 +59,8 @@ class EventHandler:
                     await self._handle_steal_card(player_id, room_id, payload)
                 case "skip_steal":
                     await self._handle_skip_steal(player_id, room_id, payload)
+                case "confirm_burst":
+                    await self._handle_confirm_burst(player_id, room_id, payload)
                 case "end_turn":
                     await self._handle_end_turn(player_id, room_id, payload)
                 case "leave_room":
@@ -135,6 +138,12 @@ class EventHandler:
     ) -> None:
         SkipStealPayload(**payload)
         await self.service.skip_steal(player_id=player_id, room_id=room_id)
+
+    async def _handle_confirm_burst(
+        self, player_id: str, room_id: str, payload: dict
+    ) -> None:
+        ConfirmBurstPayload(**payload)
+        await self.service.confirm_burst(player_id=player_id, room_id=room_id)
 
     async def _handle_end_turn(
         self, player_id: str, room_id: str, payload: dict

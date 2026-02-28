@@ -63,7 +63,7 @@ const GameBoard = ({
   return (
     <div className="flex h-full gap-4">
       {/* メインフィールド */}
-      <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto overflow-x-hidden scrollbar-hide">
         {/* ターン表示 */}
         <TurnIndicator
           currentPlayer={currentPlayer}

@@ -20,7 +20,7 @@ type GameAction =
   | { type: "CARD_DRAWN"; player: string; card: number; field: number[] }
   | { type: "CARDS_SCORED"; player: string; score: number }
   | { type: "BURST"; player: string }
-  | { type: "CARD_STOLEN"; fromPlayer: string; toPlayer: string; card: number }
+  | { type: "CARD_STOLEN"; fromPlayer: string; toPlayer: string; card: number; count: number }
   | { type: "TURN_CHANGED"; currentPlayer: string }
   | {
       type: "GAME_STATE";
@@ -145,7 +145,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           },
           [action.toPlayer]: {
             ...state.players[action.toPlayer],
-            field: [...(state.players[action.toPlayer]?.field ?? []), action.card],
+            field: [...(state.players[action.toPlayer]?.field ?? []), ...Array(action.count).fill(action.card)],
           },
         },
         stealableTargets: {},
@@ -302,9 +302,10 @@ export const useWebSocket = (
             fromPlayer: event.payload.from_player,
             toPlayer: event.payload.to_player,
             card: event.payload.card,
+            count: event.payload.count,
           });
           toast.warning(
-            `${event.payload.to_player} が ${event.payload.from_player} から ${event.payload.card} を横取り！`
+            `${event.payload.to_player} が ${event.payload.from_player} から ${event.payload.card} を ${event.payload.count}枚横取り！`
           );
           break;
 

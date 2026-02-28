@@ -237,6 +237,12 @@ class RedisClient:
     ) -> None:
         await self.redis.lrem(self._field_key(room_id, nickname), 1, str(card))
 
+    async def remove_all_of_card_from_field(
+        self, room_id: str, nickname: str, card: int
+    ) -> None:
+        """指定した数字のカードをすべて場から削除する。"""
+        await self.redis.lrem(self._field_key(room_id, nickname), 0, str(card))
+
     async def get_all_fields(self, room_id: str) -> dict[str, list[int]]:
         nicknames = await self.get_all_nicknames(room_id)
         result: dict[str, list[int]] = {}

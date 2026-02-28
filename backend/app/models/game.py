@@ -33,6 +33,7 @@ class GamePhase(str, Enum):
     DRAW = "draw"
     DRAWN = "drawn"  # カードを引いた後（もう1枚引くかターン終了を選択）
     STEAL = "steal"
+    BURST = "burst"  # バースト確認待ち
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +78,10 @@ class StealCardPayload(BaseModel):
 
 
 class SkipStealPayload(BaseModel):
+    pass
+
+
+class ConfirmBurstPayload(BaseModel):
     pass
 
 
@@ -128,6 +133,7 @@ class CardStolenPayload(BaseModel):
     from_player: str    # nickname（横取りされた側）
     to_player: str      # nickname（横取りした側）
     card: int
+    count: int          # 横取りした枚数
 
 
 class TurnChangedPayload(BaseModel):

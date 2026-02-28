@@ -10,6 +10,7 @@ export type ClientEvent =
   | { type: "draw_card"; payload: Record<string, never> }
   | { type: "steal_card"; payload: Record<string, never> }
   | { type: "skip_steal"; payload: Record<string, never> }
+  | { type: "confirm_burst"; payload: Record<string, never> }
   | { type: "end_turn"; payload: Record<string, never> }
   | { type: "leave_room"; payload: Record<string, never> };
 
@@ -65,6 +66,7 @@ export type ServerEvent =
         from_player: string;
         to_player: string;
         card: number;
+        count: number;
       };
     }
   | {

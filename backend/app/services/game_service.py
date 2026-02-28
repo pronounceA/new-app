@@ -254,9 +254,10 @@ class GameService:
             },
         )
 
-        # バースト判定
+        # バースト判定: バースト条件を満たしたらBURSTフェーズへ遷移しプレイヤーの確認を待つ
         if self._is_burst(field_after, card):
-            await self._handle_burst(room_id, nickname)
+            await self.redis.set_turn(room_id, nickname, GamePhase.BURST)
+            await self._broadcast_game_state(room_id)
             return
 
         # 山札0枚チェック（最後の1枚を引いた場合）
@@ -285,8 +286,11 @@ class GameService:
             raise GameError("CANNOT_STEAL", "横取り対象が存在しません")
 
         for target_nickname in targets:
-            await self.redis.remove_card_from_field(room_id, target_nickname, card)
-            await self.redis.add_to_field(room_id, nickname, card)
+            target_field = await self.redis.get_field(room_id, target_nickname)
+            count = target_field.count(card)
+            await self.redis.remove_all_of_card_from_field(room_id, target_nickname, card)
+            for _ in range(count):
+                await self.redis.add_to_field(room_id, nickname, card)
             await self.manager.broadcast(
                 room_id,
                 {
@@ -295,6 +299,7 @@ class GameService:
                         from_player=target_nickname,
                         to_player=nickname,
                         card=card,
+                        count=count,
                     ).model_dump(),
                 },
             )
@@ -310,6 +315,10 @@ class GameService:
         # スキップ後: ターン継続（プレイヤーがもう1枚引くかターン終了を選択）
         await self.redis.set_turn(room_id, nickname, GamePhase.DRAWN)
         await self._broadcast_game_state(room_id)
+
+    async def confirm_burst(self, player_id: str, room_id: str) -> None:
+        nickname, _ = await self._validate_turn(room_id, player_id, GamePhase.BURST)
+        await self._handle_burst(room_id, nickname)
 
     async def end_turn(self, player_id: str, room_id: str) -> None:
         nickname, _ = await self._validate_turn(room_id, player_id, GamePhase.DRAWN)
